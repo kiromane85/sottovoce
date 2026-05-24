@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,7 +13,7 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: keyof typeof Ionico
 ];
 
 export default function SettingsScreen() {
-  const { colors, themeMode, setThemeMode, targetLang } = useApp();
+  const { colors, themeMode, setThemeMode, targetLang, carModeEnabled, setCarModeEnabled } = useApp();
   const router = useRouter();
 
   return (
@@ -73,6 +73,28 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>GUIDA</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.row} testID="settings-car-row">
+            <Ionicons name="car-sport-outline" size={22} color={colors.textPrimary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+                Modalità Auto
+              </Text>
+              <Text style={[styles.rowSubLabel, { color: colors.textMuted }]}>
+                Landscape, font grandi e tema scuro per la guida
+              </Text>
+            </View>
+            <Switch
+              testID="settings-car-switch"
+              value={carModeEnabled}
+              onValueChange={setCarModeEnabled}
+              thumbColor={carModeEnabled ? colors.primary : undefined}
+              trackColor={{ false: colors.surfaceHighlight, true: colors.primaryGlow }}
+            />
+          </View>
+        </View>
+
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>INFORMAZIONI</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.row}>
@@ -130,6 +152,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   rowLabel: { flex: 1, fontSize: 15, fontWeight: "600" },
+  rowSubLabel: { fontSize: 12, marginTop: 2 },
   rowValue: { fontSize: 14, fontWeight: "500" },
   footer: { marginTop: 32, textAlign: "center", fontSize: 12, lineHeight: 18 },
 });

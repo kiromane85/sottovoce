@@ -91,6 +91,11 @@ class ManualTrackRequest(BaseModel):
     album: Optional[str] = None
 
 
+class LinkResolveRequest(BaseModel):
+    url: str
+    target_lang: str = "Italian"
+
+
 class LyricsLine(BaseModel):
     t_ms: Optional[int] = None
     original: str
@@ -436,6 +441,123 @@ LANG_OPTIONS = [
 
 
 # ---------------------------------------------------------------------------
+# Music link parser (Tidal / Spotify / generic Open Graph)
+# ---------------------------------------------------------------------------
+_OG_TAG_RE = re.compile(
+    r'<meta[^>]+(?:property|name)=["\']([^"\']+)["\'][^>]+content=["\']([^"\']*)["\']',
+    re.IGNORECASE,
+)
+_OG_TAG_RE_ALT = re.compile(
+    r'<meta[^>]+content=["\']([^"\']*)["\'][^>]+(?:property|name)=["\']([^"\']+)["\']',
+    re.IGNORECASE,
+)
+
+
+def _extract_meta(html: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for m in _OG_TAG_RE.finditer(html):
+        out.setdefault(m.group(1).lower(), m.group(2))
+    for m in _OG_TAG_RE_ALT.finditer(html):
+        out.setdefault(m.group(2).lower(), m.group(1))
+    return out
+
+
+def _split_title_artist(s: str) -> Optional[tuple]:
+    """Try common title separators used by music platforms."""
+    if not s:
+        return None
+    # Pattern: "Song - Artist"
+    for sep in [" - ", " — ", " – ", " by ", " · "]:
+        if sep in s:
+            parts = s.split(sep, 1)
+            if len(parts) == 2 and all(p.strip() for p in parts):
+                return parts[0].strip(), parts[1].strip()
+    return None
+
+
+def parse_music_link(url: str) -> Dict[str, Any]:
+    """Best-effort title/artist extraction from a music share link."""
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120 Mobile Safari/537.36"
+        ),
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    # Spotify oEmbed + page meta (preferred — high success rate)
+    if "open.spotify.com" in url or "spotify.com/track" in url:
+        # Use HTML scrape: og:title = track, og:description = "Artist · Album · Song · Year"
+        try:
+            r = requests.get(url, timeout=10, headers=headers, allow_redirects=True)
+            if r.status_code == 200:
+                meta = _extract_meta(r.text)
+                og_title = meta.get("og:title", "").strip()
+                og_desc = meta.get("og:description", "").strip()
+                # Spotify description format: "Artist · Album · Song · Year"
+                if og_desc and " · " in og_desc and og_title:
+                    parts = [p.strip() for p in og_desc.split(" · ")]
+                    artist = parts[0] if parts else ""
+                    if artist:
+                        return {"title": og_title, "artist": artist, "source": "spotify"}
+                # Fallback: oEmbed
+                if og_title:
+                    return {"title": og_title, "artist": "", "source": "spotify"}
+        except Exception as exc:
+            logger.warning("spotify scrape error: %s", exc)
+
+    # Generic Open Graph scrape (Tidal / Apple Music / YouTube Music / others)
+    try:
+        r = requests.get(url, timeout=10, headers=headers, allow_redirects=True)
+        if r.status_code == 200:
+            meta = _extract_meta(r.text)
+            og_title = meta.get("og:title") or meta.get("twitter:title") or ""
+            og_desc = meta.get("og:description") or meta.get("twitter:description") or ""
+            og_site = meta.get("og:site_name", "")
+            music_song = meta.get("og:music:song", "")
+            music_artist = (
+                meta.get("og:music:musician")
+                or meta.get("music:musician")
+                or meta.get("og:music:creator")
+                or ""
+            )
+
+            # 1) Music-specific OG tags
+            if music_song and music_artist:
+                return {
+                    "title": music_song,
+                    "artist": music_artist,
+                    "source": og_site or "link",
+                }
+
+            # 2) Try "Song by Artist" patterns in title / description
+            for candidate in (og_title, og_desc):
+                m = re.search(
+                    r'^(?:Listen to\s+)?["“]?(.+?)["”]?\s+(?:by|di)\s+(.+?)(?:\s+on\s+|\.|$)',
+                    candidate.strip(),
+                    flags=re.IGNORECASE,
+                )
+                if m:
+                    title = m.group(1).strip(' "\'')
+                    artist = m.group(2).strip().rstrip(".")
+                    if title and artist:
+                        return {"title": title, "artist": artist, "source": og_site or "link"}
+
+            # 3) "Title - Artist" / "Title — Artist"
+            pair = _split_title_artist(og_title)
+            if pair:
+                return {"title": pair[0], "artist": pair[1], "source": og_site or "link"}
+
+            # 4) Title only as last resort
+            if og_title:
+                return {"title": og_title, "artist": "", "source": og_site or "link"}
+    except Exception as exc:
+        logger.warning("link scrape error: %s", exc)
+
+    return {"title": "", "artist": "", "source": ""}
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 @api_router.get("/")
@@ -560,6 +682,23 @@ async def track_manual(req: ManualTrackRequest) -> TrackResolveResponse:
     )
     await save_history(track)
     return track
+
+
+@api_router.post("/track/from_link")
+async def track_from_link_meta(req: LinkResolveRequest) -> Dict[str, Any]:
+    """Resolve a music share link (Tidal/Spotify/Apple Music/YouTube Music)
+    to a (title, artist) pair. Does NOT run the full lyrics pipeline — the
+    client uses the returned title/artist to call /api/track/manual."""
+    url = (req.url or "").strip()
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="URL non valido")
+    meta = parse_music_link(url)
+    if not meta.get("title") or not meta.get("artist"):
+        raise HTTPException(
+            status_code=404,
+            detail="Impossibile estrarre titolo e artista dal link.",
+        )
+    return meta
 
 
 @api_router.get("/history", response_model=List[HistoryItem])

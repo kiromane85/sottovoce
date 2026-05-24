@@ -67,6 +67,18 @@ export async function resolveManual(
   return jsonOrThrow<TrackResolveResponse>(res);
 }
 
+export async function resolveLinkMeta(
+  url: string,
+  targetLang: string
+): Promise<{ title: string; artist: string; source: string }> {
+  const res = await fetch(api("/track/from_link"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, target_lang: targetLang }),
+  });
+  return jsonOrThrow(res);
+}
+
 export async function fetchHistory(): Promise<HistoryItem[]> {
   const res = await fetch(api("/history"));
   return jsonOrThrow<HistoryItem[]>(res);

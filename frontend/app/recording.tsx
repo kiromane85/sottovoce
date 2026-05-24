@@ -32,7 +32,7 @@ import MicButton from "@/src/components/MicButton";
 import { resolveAudio } from "@/src/lib/api";
 import { trackStore } from "@/src/lib/trackStore";
 
-const RECORD_DURATION_MS = 9000;
+const RECORD_DURATION_MS = 30000;
 
 type Phase = "idle" | "permission" | "denied" | "recording" | "uploading" | "error";
 
@@ -220,7 +220,7 @@ export default function RecordingScreen() {
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               {isBusy
                 ? "Sto cercando i testi e la traduzione..."
-                : "Tieni il telefono vicino alla fonte audio per ~9 secondi."}
+                : "Tieni il telefono vicino alla fonte audio per ~30 secondi."}
             </Text>
 
             <View style={{ height: 56 }} />

@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,17 +15,52 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useApp } from "@/src/context/AppContext";
-import { resolveManual } from "@/src/lib/api";
+import { resolveLinkMeta, resolveManual } from "@/src/lib/api";
 import { trackStore } from "@/src/lib/trackStore";
 
 export default function ManualScreen() {
   const { colors, targetLang } = useApp();
   const router = useRouter();
 
+  const [link, setLink] = useState("");
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkInfo, setLinkInfo] = useState<string | null>(null);
+
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const resolveLink = async () => {
+    const url = link.trim();
+    if (!url) {
+      setError("Incolla un link Tidal, Spotify, Apple Music o YouTube Music.");
+      return;
+    }
+    setError(null);
+    setLinkInfo(null);
+    setLinkLoading(true);
+    try {
+      const meta = await resolveLinkMeta(url, targetLang);
+      if (meta.title) setTitle(meta.title);
+      if (meta.artist) setArtist(meta.artist);
+      if (!meta.artist) {
+        setLinkInfo(
+          "Ho trovato solo il titolo. Aggiungi l'artista manualmente e tocca cerca."
+        );
+      } else {
+        setLinkInfo(`Pre-compilato da ${meta.source || "link"}.`);
+      }
+    } catch (e: any) {
+      setError(
+        e?.message?.includes("404")
+          ? "Impossibile leggere il link (Tidal blocca i crawler). Inserisci titolo e artista manualmente."
+          : e?.message || "Errore nel risolvere il link."
+      );
+    } finally {
+      setLinkLoading(false);
+    }
+  };
 
   const submit = async () => {
     if (!title.trim() || !artist.trim()) {
@@ -61,15 +97,61 @@ export default function ManualScreen() {
           <View style={{ width: 44 }} />
         </View>
 
-        <View style={styles.body}>
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Cerca per titolo e artista
+            Da link o manualmente
           </Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Usa questa modalità quando il riconoscimento automatico non funziona.
+            Incolla un link da Spotify, Tidal, Apple Music o YouTube Music — oppure inserisci titolo e artista.
           </Text>
 
           <View style={{ height: 24 }} />
+
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Link al brano</Text>
+          <View style={styles.linkRow}>
+            <TextInput
+              testID="manual-link-input"
+              value={link}
+              onChangeText={setLink}
+              placeholder="https://open.spotify.com/track/…"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              style={[
+                styles.input,
+                styles.linkInput,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.textPrimary,
+                  borderColor: colors.border,
+                },
+              ]}
+            />
+            <Pressable
+              testID="manual-resolve-link-btn"
+              onPress={resolveLink}
+              disabled={linkLoading}
+              style={({ pressed }) => [
+                styles.linkBtn,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed || linkLoading ? 0.7 : 1,
+                },
+              ]}
+            >
+              {linkLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Ionicons name="arrow-down-circle" size={22} color="#FFFFFF" />
+              )}
+            </Pressable>
+          </View>
+          {linkInfo ? (
+            <Text style={[styles.info, { color: colors.success }]}>{linkInfo}</Text>
+          ) : null}
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <Text style={[styles.label, { color: colors.textSecondary }]}>Titolo</Text>
           <TextInput
@@ -108,7 +190,7 @@ export default function ManualScreen() {
           {error ? (
             <Text style={[styles.error, { color: colors.error }]}>{error}</Text>
           ) : null}
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <Pressable
@@ -153,7 +235,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   headerTitle: { fontSize: 18, fontWeight: "700" },
-  body: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
+  body: { padding: 24, paddingBottom: 32 },
   title: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
   subtitle: { fontSize: 14, marginTop: 8, lineHeight: 20 },
   label: { fontSize: 12, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
@@ -164,6 +246,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
   },
+  linkRow: { flexDirection: "row", gap: 8 },
+  linkInput: { flex: 1 },
+  linkBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  info: { marginTop: 8, fontSize: 12, fontWeight: "600" },
+  divider: { height: 1, marginVertical: 20 },
   error: { marginTop: 16, fontSize: 13, fontWeight: "600" },
   footer: { paddingHorizontal: 24, paddingBottom: 16 },
   primaryBtn: {

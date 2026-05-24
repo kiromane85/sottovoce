@@ -28,6 +28,24 @@ export default function Home() {
         </View>
         <View style={styles.iconRow}>
           <Pressable
+            testID="home-car-toggle-btn"
+            onPress={() => setCarModeEnabled(!carModeEnabled)}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              {
+                backgroundColor: carModeEnabled ? colors.primary : colors.surface,
+                borderColor: carModeEnabled ? colors.primary : colors.border,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Ionicons
+              name="car-sport-outline"
+              size={22}
+              color={carModeEnabled ? "#FFFFFF" : colors.textPrimary}
+            />
+          </Pressable>
+          <Pressable
             testID="home-history-btn"
             onPress={() => router.push("/history")}
             style={({ pressed }) => [
@@ -57,7 +75,7 @@ export default function Home() {
         </Text>
         <Text style={[styles.title, { color: colors.primary }]}>la tua musica</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Tocca il microfono e ascolto la canzone per ~9 secondi.
+          Tocca il microfono e ascolto la canzone per ~30 secondi.
         </Text>
 
         <View style={{ height: 56 }} />

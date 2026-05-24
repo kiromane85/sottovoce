@@ -27,11 +27,11 @@ function formatTime(ms: number): string {
 }
 
 export default function ResultScreen() {
-  const { colors, isDark } = useApp();
+  const { colors, isDark, carModeEnabled, setCarModeEnabled } = useApp();
   const router = useRouter();
   const [track] = useState<TrackResolveResponse | null>(() => trackStore.get());
   const [mode, setMode] = useState<ViewMode>("both");
-  const [carMode, setCarMode] = useState(false);
+  const [carMode, setCarMode] = useState(carModeEnabled);
   const [playing, setPlaying] = useState(false);
   const [positionMs, setPositionMs] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(1);
@@ -124,7 +124,10 @@ export default function ResultScreen() {
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Risultato</Text>
           <Pressable
             testID="result-car-toggle-btn"
-            onPress={() => setCarMode(true)}
+            onPress={() => {
+              setCarMode(true);
+              setCarModeEnabled(true);
+            }}
             style={[styles.headerBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
             <Ionicons name="car-sport-outline" size={22} color={colors.textPrimary} />
@@ -134,7 +137,10 @@ export default function ResultScreen() {
         <View style={styles.carHeader}>
           <Pressable
             testID="result-exit-car-btn"
-            onPress={() => setCarMode(false)}
+            onPress={() => {
+              setCarMode(false);
+              setCarModeEnabled(false);
+            }}
             style={[styles.carExitBtn]}
           >
             <Ionicons name="contract-outline" size={28} color="#FFFFFF" />

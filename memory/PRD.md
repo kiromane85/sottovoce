@@ -14,9 +14,14 @@ Sottovoce è l'app mobile (Expo + React Native) che riconosce le canzoni in ripr
 8. **Settings** → tema chiaro/scuro/auto + lingua traduzione.
 
 ## Tech stack
-- **Backend**: FastAPI + Motor (MongoDB) + emergentintegrations (Gemini via Emergent Universal Key).
-- **Mobile**: Expo SDK 54, expo-router, react-native-reanimated, expo-audio, expo-haptics, @expo/vector-icons.
-- **Integrazioni**: Gemini 2.5 Pro (recognition), Gemini 2.5 Flash (translate), lrclib.net (lyrics).
+- **Backend**: FastAPI + Motor (MongoDB) + emergentintegrations (Gemini via Emergent Universal Key) + requests (link scrape).
+- **Mobile**: Expo SDK 54, expo-router, react-native-reanimated, expo-audio, expo-haptics, expo-screen-orientation, @expo/vector-icons.
+- **Integrazioni**: Gemini 2.5 Pro (recognition), Gemini 2.5 Flash (translate), lrclib.net (lyrics), Spotify/Tidal/Apple/YouTube Music link scraping.
+
+## Aggiornamenti recenti (v1.1)
+- Durata registrazione audio: **9s → 30s** per riconoscimento più accurato
+- **Modalità Auto persistente**: toggle in Settings + chip rapido in Home; quando attiva lock landscape + tema scuro su tutte le schermate
+- **Link Tidal/Spotify**: nuovo endpoint `POST /api/track/from_link` che estrae titolo+artista da link Spotify (funziona bene) / Tidal (fallback manuale, scraping bloccato lato server) / Apple Music / YouTube Music via Open Graph meta. UI: campo "Link al brano" nella schermata `manual.tsx` con pulsante "Risolvi".
 
 ## API surface (riutilizzato dal repo originale)
 | Method | Path | Scopo |
