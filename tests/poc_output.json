@@ -1,0 +1,95 @@
+{
+  "steps": {
+    "1_recognition": {
+      "title": "Imagine",
+      "artist": "John Lennon",
+      "album": "Imagine",
+      "language": "en",
+      "confidence": 1.0,
+      "transcript": "Imagine there's no heaven, it's easy if you try. No hell below us, above us only sky.",
+      "reasoning": "The spoken lyrics are a verbatim match to the opening verse of John Lennon's iconic song."
+    },
+    "2_lyrics": {
+      "found": true,
+      "has_synced": true,
+      "title": "Imagine",
+      "artist": "John Lennon",
+      "duration": 184.0,
+      "preview_synced": "[00:14.58] Imagine there's no heaven\n[00:17.44] \n[00:20.61] It's easy if you try\n[00:23.87] \n[00:27.14] No hell below us\n[00:31.96] \n[00:34.02] Above us only sky\n[00:39.71] Imagine all the people\n[00:",
+      "preview_plain": "Imagine there's no heaven\nIt's easy if you try\nNo hell below us\nAbove us only sky\nImagine all the people\nLiving for today, I\n\nImagine there's no countries\nIt isn't hard to do\nNothing to kill or die fo"
+    },
+    "3_parsed": {
+      "line_count": 30,
+      "first_5": [
+        {
+          "t_ms": 14580,
+          "line": "Imagine there's no heaven"
+        },
+        {
+          "t_ms": 17440,
+          "line": ""
+        },
+        {
+          "t_ms": 20610,
+          "line": "It's easy if you try"
+        },
+        {
+          "t_ms": 23870,
+          "line": ""
+        },
+        {
+          "t_ms": 27140,
+          "line": "No hell below us"
+        }
+      ],
+      "synced": true
+    },
+    "4_translation": {
+      "target_lang": "Italian",
+      "line_count": 30,
+      "first_8": [
+        {
+          "t_ms": 14580,
+          "original": "Imagine there's no heaven",
+          "translated": "Immagina non ci sia il paradiso"
+        },
+        {
+          "t_ms": 17440,
+          "original": "",
+          "translated": ""
+        },
+        {
+          "t_ms": 20610,
+          "original": "It's easy if you try",
+          "translated": "È facile se ci provi"
+        },
+        {
+          "t_ms": 23870,
+          "original": "",
+          "translated": ""
+        },
+        {
+          "t_ms": 27140,
+          "original": "No hell below us",
+          "translated": "Nessun inferno sotto di noi"
+        },
+        {
+          "t_ms": 31960,
+          "original": "",
+          "translated": ""
+        },
+        {
+          "t_ms": 34020,
+          "original": "Above us only sky",
+          "translated": "Sopra di noi solo il cielo"
+        },
+        {
+          "t_ms": 39710,
+          "original": "Imagine all the people",
+          "translated": "Immagina tutta la gente"
+        }
+      ]
+    }
+  },
+  "success": true
+}

@@ -1,23 +1,23 @@
 [
   {
     "content": "Phase 1: Get integration playbooks (AudD audio recognition + Emergent LLM)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Get AudD API key from user",
-    "status": "pending"
+    "status": "cancelled"
   },
   {
     "content": "Phase 1: Create POC script testing audio recognition + lrclib lyrics + translation",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Run POC and fix until all 3 integrations work end-to-end",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Get design guidelines from design_agent",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Phase 2: Build FastAPI backend (recognize/lyrics/translate/history endpoints)",
@@ -25,6 +25,10 @@
   },
   {
     "content": "Phase 2: Build React PWA frontend (language picker, mic button, karaoke, car mode, history)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: PWA manifest + service worker for installability",
     "status": "pending"
   },
   {
