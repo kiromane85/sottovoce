@@ -1,12 +1,12 @@
-// Icon font loader for Expo apps. Fonts are loaded from a CDN under Expo Go
-// (StoreClient) because @expo/vector-icons' bundled .ttf files come back as
-// 0 bytes from Metro's asset resolver on Android. Native dev/prod builds use
-// react-native-vector-icons autolinking; web uses CDN as well as a safety net.
-// ICON_VECTOR_VERSION should match @expo/vector-icons in package.json.
-// Usage: const [loaded, error] = useIconFonts();
+// Icon font loader with multi-CDN fallback.
+// Many VPNs / corporate networks / national firewalls block specific CDNs.
+// We try sources in this order: unpkg → jsdelivr → our own backend.
+// `Font.loadAsync` registers a font under the family name passed as key.
+// If a source returns an empty/invalid file, it throws and we move on.
 
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import { useFonts } from "expo-font";
+import * as Font from "expo-font";
+import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 
 const ICON_VECTOR_VERSION = "15.1.1";
@@ -35,24 +35,70 @@ const ICON_FAMILIES = [
 
 type IconFamily = (typeof ICON_FAMILIES)[number];
 
-const iconFontMap = (): Record<IconFamily, string> =>
-  Object.fromEntries(
-    ICON_FAMILIES.map((f) => [
-      f,
-      `https://cdn.jsdelivr.net/npm/@expo/vector-icons@${ICON_VECTOR_VERSION}/build/vendor/react-native-vector-icons/Fonts/${f}.ttf`,
-    ]),
-  ) as Record<IconFamily, string>;
+type Source = (family: IconFamily) => string;
 
-// Load CDN fonts whenever we're in Expo Go (StoreClient) OR when the bundled
-// fonts may be unreliable (dev client on Android with Metro). Standalone /
-// production builds have proper native autolinking and don't need the CDN.
-const shouldUseCdnFonts = (): boolean => {
+const SOURCES: Source[] = [
+  // unpkg — usually accessible behind most VPNs
+  (f) =>
+    `https://unpkg.com/@expo/vector-icons@${ICON_VECTOR_VERSION}/build/vendor/react-native-vector-icons/Fonts/${f}.ttf`,
+  // jsdelivr — fast on most networks
+  (f) =>
+    `https://cdn.jsdelivr.net/npm/@expo/vector-icons@${ICON_VECTOR_VERSION}/build/vendor/react-native-vector-icons/Fonts/${f}.ttf`,
+  // Our own backend — guaranteed reachable from the app
+  (f) => `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/fonts/${f}.ttf`,
+];
+
+const shouldUseRemoteFonts = (): boolean => {
   const env = Constants.executionEnvironment;
   if (env === ExecutionEnvironment.StoreClient) return true;
-  // In dev (any platform) safer to load from CDN to avoid empty-font issues.
   if (__DEV__ && Platform.OS !== "web") return true;
   return false;
 };
 
-export const useIconFonts = (): readonly [boolean, Error | null] =>
-  useFonts(shouldUseCdnFonts() ? iconFontMap() : {});
+async function loadFromSource(source: Source, timeoutMs = 7000): Promise<void> {
+  const map: Record<string, string> = {};
+  for (const f of ICON_FAMILIES) map[f] = source(f);
+  await Promise.race([
+    Font.loadAsync(map),
+    new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error("font load timeout")), timeoutMs),
+    ),
+  ]);
+}
+
+export const useIconFonts = (): readonly [boolean, Error | null] => {
+  const [loaded, setLoaded] = useState<boolean>(!shouldUseRemoteFonts());
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!shouldUseRemoteFonts()) return;
+    let cancelled = false;
+    (async () => {
+      let lastError: Error | null = null;
+      for (const source of SOURCES) {
+        try {
+          await loadFromSource(source);
+          if (!cancelled) {
+            setLoaded(true);
+            setError(null);
+          }
+          return;
+        } catch (e) {
+          lastError = e as Error;
+          // try next source
+        }
+      }
+      if (!cancelled) {
+        // All sources failed — let the app render anyway so the user is not
+        // stuck on a blank splash. Icons will fall back to missing glyphs.
+        setLoaded(true);
+        setError(lastError);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return [loaded, error] as const;
+};

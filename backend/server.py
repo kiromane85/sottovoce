@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -600,6 +601,38 @@ def parse_music_link(url: str) -> Dict[str, Any]:
 @api_router.get("/")
 async def root() -> Dict[str, str]:
     return {"message": "Sottovoce API up"}
+
+
+# ---------------------------------------------------------------------------
+# Vector-icons font proxy — guaranteed reachable from the app even when the
+# user's VPN / firewall blocks public CDNs like unpkg / jsdelivr.
+# ---------------------------------------------------------------------------
+_VECTOR_FONTS_DIR = (
+    ROOT_DIR.parent
+    / "frontend"
+    / "node_modules"
+    / "@expo"
+    / "vector-icons"
+    / "build"
+    / "vendor"
+    / "react-native-vector-icons"
+    / "Fonts"
+)
+
+
+@api_router.get("/fonts/{name}")
+async def serve_vector_font(name: str):
+    # Only allow .ttf files and prevent path traversal
+    if "/" in name or "\\" in name or ".." in name or not name.lower().endswith(".ttf"):
+        raise HTTPException(status_code=400, detail="Invalid font name")
+    font_path = _VECTOR_FONTS_DIR / name
+    if not font_path.exists() or not font_path.is_file():
+        raise HTTPException(status_code=404, detail="Font not found")
+    return FileResponse(
+        path=str(font_path),
+        media_type="font/ttf",
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )
 
 
 @api_router.get("/languages")
