@@ -1,0 +1,170 @@
+{
+  "theme_and_archetype": {
+    "domain": "Music / Audio / Karaoke Utility",
+    "theme": "Light / Dark / Auto Support (Mobile-First)",
+    "archetype": "Archetype 5 (Cinematic/Premium) with a touch of Archetype 4 (High-Contrast) for Car Mode readability",
+    "rationale": "Sottovoce requires an immersive, emotional experience for lyrics reading (dark, cinematic, glowing accents) paired with extreme clarity and high contrast for Car Mode safety."
+  },
+  "typography": {
+    "font_family": {
+      "primary": "Outfit",
+      "instruction": "Install via expo-font: @expo-google-fonts/outfit. Use for both headings and body to create a sleek, cohesive, musical feel."
+    },
+    "scale": {
+      "h1": { "fontSize": 40, "lineHeight": 48, "letterSpacing": -1, "fontWeight": "800" },
+      "h2": { "fontSize": 32, "lineHeight": 40, "letterSpacing": -0.5, "fontWeight": "700" },
+      "h3": { "fontSize": 24, "lineHeight": 32, "letterSpacing": 0, "fontWeight": "600" },
+      "body": { "fontSize": 16, "lineHeight": 24, "fontWeight": "400" },
+      "caption": { "fontSize": 12, "lineHeight": 16, "fontWeight": "500", "letterSpacing": 1 }
+    },
+    "car_mode_scale": {
+      "h1": { "fontSize": 56, "lineHeight": 64, "fontWeight": "900" },
+      "h2": { "fontSize": 48, "lineHeight": 56, "fontWeight": "800" },
+      "lyrics_active": { "fontSize": 40, "lineHeight": 48, "fontWeight": "800" },
+      "lyrics_inactive": { "fontSize": 24, "lineHeight": 32, "fontWeight": "600" }
+    }
+  },
+  "colors": {
+    "light": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "surfaceHighlight": "#F4F4F5",
+      "textPrimary": "#09090B",
+      "textSecondary": "#71717A",
+      "textMuted": "#A1A1AA",
+      "primary": "#E11D48",
+      "primaryGlow": "rgba(225, 29, 72, 0.2)",
+      "border": "#E4E4E7",
+      "error": "#EF4444",
+      "success": "#10B981"
+    },
+    "dark": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "surfaceHighlight": "#27272A",
+      "textPrimary": "#FAFAFA",
+      "textSecondary": "#A1A1AA",
+      "textMuted": "#52525B",
+      "primary": "#F43F5E",
+      "primaryGlow": "rgba(244, 63, 94, 0.3)",
+      "border": "#27272A",
+      "error": "#F87171",
+      "success": "#34D399"
+    }
+  },
+  "spacing": {
+    "base": 8,
+    "scale": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32,
+      "2xl": 48,
+      "3xl": 64
+    },
+    "car_mode_targets": {
+      "minHeight": 64,
+      "minWidth": 64,
+      "padding": 24
+    }
+  },
+  "animation_reanimated": {
+    "lyrics_scroll": {
+      "type": "spring",
+      "damping": 20,
+      "stiffness": 90
+    },
+    "lyrics_active_state": {
+      "duration": 300,
+      "easing": "Easing.out(Easing.quad)"
+    },
+    "mic_pulse": {
+      "type": "repeat",
+      "animation": "withTiming",
+      "duration": 1500,
+      "easing": "Easing.inOut(Easing.ease)"
+    }
+  },
+  "components": {
+    "MicButton": {
+      "layout": "Huge circular button centered on home screen.",
+      "styles": {
+        "width": 120,
+        "height": 120,
+        "borderRadius": 60,
+        "justifyContent": "center",
+        "alignItems": "center"
+      },
+      "interaction": "Tap to start ~9s recording. Wraps with multiple animated View rings using react-native-reanimated that scale outward and fade out while recording."
+    },
+    "TrackCard": {
+      "layout": "Album art (left) + Track Info (right) + Match Confidence.",
+      "styles": {
+        "flexDirection": "row",
+        "padding": 16,
+        "borderRadius": 16,
+        "alignItems": "center",
+        "gap": 16
+      },
+      "shadows": "Elevation 4 on Android, ShadowOpacity 0.1 on iOS"
+    },
+    "KaraokeLine": {
+      "layout": "Individual lyric line in the ScrollView.",
+      "activeStyles": {
+        "opacity": 1,
+        "transform": [{ "scale": 1 }],
+        "fontFamily": "Outfit-Bold"
+      },
+      "inactiveStyles": {
+        "opacity": 0.4,
+        "transform": [{ "scale": 0.95 }],
+        "fontFamily": "Outfit-Regular"
+      }
+    },
+    "Tabs": {
+      "layout": "Segmented control for view modes (Original / Translation / Both).",
+      "styles": {
+        "flexDirection": "row",
+        "borderRadius": 12,
+        "padding": 4
+      }
+    }
+  },
+  "screens": {
+    "Splash": {
+      "description": "App entry point. Displays logo against the dynamic abstract background. Language picker appears if first launch.",
+      "background_image_dark": "https://static.prod-images.emergentagent.com/jobs/5654d0ce-a0d4-4ac3-8819-d442f8f7bd32/images/7531821a75f1fa50efc636613ceae09d073986e6142b363519e2ad401a4644e5.png",
+      "background_image_light": "https://static.prod-images.emergentagent.com/jobs/5654d0ce-a0d4-4ac3-8819-d442f8f7bd32/images/fdbbd8a79e349932c72d3f11d4567741658212b33e9cf64476a3f8ef09cdd96d.png"
+    },
+    "Home": {
+      "description": "Minimalist centered layout. Huge Mic button in center. Secondary 'Manual Input' text button below. Top right: History & Settings icons."
+    },
+    "Recording": {
+      "description": "Visual feedback state. Mic button pulses. Text 'Listening...' with a ~9s progress indicator."
+    },
+    "Result_Karaoke": {
+      "description": "The 'Wow' screen.",
+      "layout": {
+        "top": "Track Card & Car Mode toggle.",
+        "middle": "Tabs (Original / Translation / Both).",
+        "body": "Reanimated ScrollView of Lyrics. If 'Both' is selected, display flex-row side-by-side on tablet/car mode, or alternating lines (Bold Original, Regular Translation) on portrait mobile."
+      }
+    },
+    "Car_Mode": {
+      "description": "Landscape forced. Removes heavy UI. Shows only Track title, massive active Lyric, and previous/next lyric.",
+      "overrides": "Use car_mode_scale typography. Force dark mode or ultra-high contrast light mode. Touch targets minimum 64x64."
+    },
+    "History": {
+      "description": "Chronological list of identified tracks. Swipe-to-delete row action."
+    }
+  },
+  "iconography": {
+    "library": "lucide-react-native",
+    "usage": "Use stroke-width 2.5 for a bold, legible look. No emojis."
+  },
+  "technical_rules": {
+    "styling": "Use pure React Native StyleSheet. Do not use Tailwind or CSS files.",
+    "testing": "All interactive elements MUST have a data-testid attribute (e.g., data-testid='mic-record-button')."
+  }
+}
