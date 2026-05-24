@@ -10,11 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.sottovoce.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Ascolto la canzone per riconoscerla"
       }
     },
     "android": {
+      "package": "com.sottovoce.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#09090B"
@@ -44,6 +46,30 @@
         "expo-audio",
         {
           "microphonePermission": "Sottovoce ascolta la canzone per riconoscerla."
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*"]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "SottovoceMicWidget",
+              "label": "Sottovoce — Riconosci brano",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "description": "Tocca per registrare e riconoscere un brano",
+              "previewImage": "./assets/images/adaptive-icon.png",
+              "updatePeriodMillis": 0,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen"
+            }
+          ]
         }
       ]
     ],

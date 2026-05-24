@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@/src/components/Ionicons";
 
 import { useApp } from "@/src/context/AppContext";
@@ -21,10 +21,14 @@ import { trackStore } from "@/src/lib/trackStore";
 export default function ManualScreen() {
   const { colors, targetLang } = useApp();
   const router = useRouter();
+  const params = useLocalSearchParams<{ link?: string; auto?: string }>();
+  const initialLink = (params.link as string) || "";
+  const autoResolve = params.auto === "1";
 
-  const [link, setLink] = useState("");
+  const [link, setLink] = useState(initialLink);
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkInfo, setLinkInfo] = useState<string | null>(null);
+  const autoTriggered = useRef(false);
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
@@ -61,6 +65,15 @@ export default function ManualScreen() {
       setLinkLoading(false);
     }
   };
+
+  // Auto-trigger link resolution when arriving from a Share intent
+  useEffect(() => {
+    if (autoResolve && initialLink && !autoTriggered.current) {
+      autoTriggered.current = true;
+      resolveLink();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoResolve, initialLink]);
 
   const submit = async () => {
     if (!title.trim() || !artist.trim()) {
