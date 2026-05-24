@@ -1,15 +1,15 @@
-// Icon font loader for Expo apps. Fonts are loaded from a CDN only under
-// Expo Go (StoreClient) — that's where @expo/vector-icons' .ttf files come
-// back as 0 bytes from Metro's asset resolver on Android. Native dev/prod
-// builds and web pass an empty map, so useFonts resolves to [true, null]
-// immediately via react-native-vector-icons autolinking / web stubs.
-// ICON_VECTOR_VERSION must match @expo/vector-icons in package.json.
+// Icon font loader for Expo apps. Fonts are loaded from a CDN under Expo Go
+// (StoreClient) because @expo/vector-icons' bundled .ttf files come back as
+// 0 bytes from Metro's asset resolver on Android. Native dev/prod builds use
+// react-native-vector-icons autolinking; web uses CDN as well as a safety net.
+// ICON_VECTOR_VERSION should match @expo/vector-icons in package.json.
 // Usage: const [loaded, error] = useIconFonts();
 
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useFonts } from "expo-font";
+import { Platform } from "react-native";
 
-const ICON_VECTOR_VERSION = "15.0.3";
+const ICON_VECTOR_VERSION = "15.1.1";
 
 const ICON_FAMILIES = [
   "AntDesign",
@@ -43,9 +43,16 @@ const iconFontMap = (): Record<IconFamily, string> =>
     ]),
   ) as Record<IconFamily, string>;
 
+// Load CDN fonts whenever we're in Expo Go (StoreClient) OR when the bundled
+// fonts may be unreliable (dev client on Android with Metro). Standalone /
+// production builds have proper native autolinking and don't need the CDN.
+const shouldUseCdnFonts = (): boolean => {
+  const env = Constants.executionEnvironment;
+  if (env === ExecutionEnvironment.StoreClient) return true;
+  // In dev (any platform) safer to load from CDN to avoid empty-font issues.
+  if (__DEV__ && Platform.OS !== "web") return true;
+  return false;
+};
+
 export const useIconFonts = (): readonly [boolean, Error | null] =>
-  useFonts(
-    Constants.executionEnvironment === ExecutionEnvironment.StoreClient
-      ? iconFontMap()
-      : {},
-  );
+  useFonts(shouldUseCdnFonts() ? iconFontMap() : {});
