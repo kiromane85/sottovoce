@@ -476,7 +476,11 @@ def _split_title_artist(s: str) -> Optional[tuple]:
 
 
 def parse_music_link(url: str) -> Dict[str, Any]:
-    """Best-effort title/artist extraction from a music share link."""
+    """Best-effort title/artist extraction from a music share link.
+    Primary: Songlink/Odesli API (covers Tidal, Spotify, Apple Music, YouTube
+    Music, Deezer, Amazon Music, Pandora, etc.).
+    Fallback: Open Graph scraping.
+    """
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 "
@@ -485,28 +489,73 @@ def parse_music_link(url: str) -> Dict[str, Any]:
         "Accept-Language": "en-US,en;q=0.9",
     }
 
-    # Spotify oEmbed + page meta (preferred — high success rate)
+    # --- Primary: Songlink / Odesli ---
+    try:
+        r = requests.get(
+            "https://api.song.link/v1-alpha.1/links",
+            params={"url": url, "userCountry": "US"},
+            timeout=10,
+            headers={"User-Agent": "Sottovoce/1.0"},
+        )
+        if r.status_code == 200:
+            data = r.json()
+            entities = data.get("entitiesByUniqueId", {}) or {}
+            # Pick the entity for the platform of the input URL if possible
+            preferred_keys = []
+            url_l = url.lower()
+            if "tidal.com" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("TIDAL_SONG")]
+            elif "open.spotify.com" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("SPOTIFY_SONG")]
+            elif "music.apple.com" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("ITUNES_SONG")]
+            elif "music.youtube.com" in url_l or "youtube.com" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("YOUTUBE")]
+            elif "deezer.com" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("DEEZER_SONG")]
+            elif "music.amazon" in url_l:
+                preferred_keys = [k for k in entities if k.startswith("AMAZON_SONG")]
+            # Combine: preferred first, then any other entity as fallback
+            candidates = preferred_keys + [k for k in entities if k not in preferred_keys]
+            for k in candidates:
+                ent = entities[k] or {}
+                t = (ent.get("title") or "").strip()
+                a = (ent.get("artistName") or "").strip()
+                if t and a:
+                    # Strip "- Remastered XXXX", "- 20XX Mix" suffixes for cleaner lyrics search
+                    t_clean = re.sub(
+                        r"\s*[-–—]\s*(?:Remaster(?:ed)?|.*?Mix|.*?Version|.*?Edit)(?:\s+\d{4})?\s*$",
+                        "",
+                        t,
+                        flags=re.IGNORECASE,
+                    ).strip()
+                    return {
+                        "title": t_clean or t,
+                        "artist": a,
+                        "source": k.split("_")[0].lower() or "link",
+                    }
+    except Exception as exc:
+        logger.warning("songlink error: %s", exc)
+
+    # --- Spotify fallback: Open Graph scrape ---
     if "open.spotify.com" in url or "spotify.com/track" in url:
-        # Use HTML scrape: og:title = track, og:description = "Artist · Album · Song · Year"
         try:
             r = requests.get(url, timeout=10, headers=headers, allow_redirects=True)
             if r.status_code == 200:
                 meta = _extract_meta(r.text)
                 og_title = meta.get("og:title", "").strip()
                 og_desc = meta.get("og:description", "").strip()
-                # Spotify description format: "Artist · Album · Song · Year"
                 if og_desc and " · " in og_desc and og_title:
                     parts = [p.strip() for p in og_desc.split(" · ")]
                     artist = parts[0] if parts else ""
                     if artist:
                         return {"title": og_title, "artist": artist, "source": "spotify"}
-                # Fallback: oEmbed
                 if og_title:
                     return {"title": og_title, "artist": "", "source": "spotify"}
         except Exception as exc:
             logger.warning("spotify scrape error: %s", exc)
 
-    # Generic Open Graph scrape (Tidal / Apple Music / YouTube Music / others)
+    # --- Generic Open Graph scrape ---
     try:
         r = requests.get(url, timeout=10, headers=headers, allow_redirects=True)
         if r.status_code == 200:
@@ -521,16 +570,8 @@ def parse_music_link(url: str) -> Dict[str, Any]:
                 or meta.get("og:music:creator")
                 or ""
             )
-
-            # 1) Music-specific OG tags
             if music_song and music_artist:
-                return {
-                    "title": music_song,
-                    "artist": music_artist,
-                    "source": og_site or "link",
-                }
-
-            # 2) Try "Song by Artist" patterns in title / description
+                return {"title": music_song, "artist": music_artist, "source": og_site or "link"}
             for candidate in (og_title, og_desc):
                 m = re.search(
                     r'^(?:Listen to\s+)?["“]?(.+?)["”]?\s+(?:by|di)\s+(.+?)(?:\s+on\s+|\.|$)',
@@ -542,13 +583,9 @@ def parse_music_link(url: str) -> Dict[str, Any]:
                     artist = m.group(2).strip().rstrip(".")
                     if title and artist:
                         return {"title": title, "artist": artist, "source": og_site or "link"}
-
-            # 3) "Title - Artist" / "Title — Artist"
             pair = _split_title_artist(og_title)
             if pair:
                 return {"title": pair[0], "artist": pair[1], "source": og_site or "link"}
-
-            # 4) Title only as last resort
             if og_title:
                 return {"title": og_title, "artist": "", "source": og_site or "link"}
     except Exception as exc:

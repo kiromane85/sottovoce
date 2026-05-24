@@ -54,7 +54,7 @@ export default function ManualScreen() {
     } catch (e: any) {
       setError(
         e?.message?.includes("404")
-          ? "Impossibile leggere il link (Tidal blocca i crawler). Inserisci titolo e artista manualmente."
+          ? "Brano non trovato dal link. Controlla l'URL o inserisci titolo e artista manualmente."
           : e?.message || "Errore nel risolvere il link."
       );
     } finally {
