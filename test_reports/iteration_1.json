@@ -1,0 +1,36 @@
+{
+  "summary": "Full backend + frontend testing for Sottovoce Expo app. Backend: 11/11 pytest passed (100%). Frontend: manual entry flow (Imagine / John Lennon) successfully resolves track + Italian translation, renders TrackCard + karaoke lines (30 lines synced). Tabs Original/Both/Translation, Car Mode toggle, Play button, History list+open, Settings theme switching (light/dark/auto), Language picker from onboarding and from Settings (Italian -> Spanish) all working.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "global", "issues": ["Console warnings: 'shadow*' style props deprecated -> use boxShadow. 'props.pointerEvents' deprecated -> use style.pointerEvents. Cosmetic only, no functional impact."]}
+    ],
+    "react_native_issues": [
+      {"component": "expo-router root", "issue": "Every testID resolves to 2 DOM nodes on web preview (likely Expo Router SSR + client hydration both rendering). Functionality is unaffected because the visible/interactive node is the .last one, but Playwright strict selectors (without .first/.last) may pick the hidden hydration node and fail with 'Element is not visible'. Consider verifying on a real Android device; this is only an issue in the web preview."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_sottovoce.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Optional: investigate the duplicate-testID issue in the Expo web preview (SSR hydration). Not blocking for Android.",
+    "Optional: replace deprecated shadow* style props with boxShadow and remove props.pointerEvents in favor of style.pointerEvents.",
+    "Audio recording / /api/track/resolve flow could not be e2e tested without a real microphone — should be verified on a real Android device."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 615 lines — acceptable but bordering on the 700-line guideline; could be split (gemini, lrclib, routes).",
+    "All API URLs read from env (EXPO_PUBLIC_BACKEND_URL); MongoDB _id is correctly excluded via from_mongo().",
+    "All async/await usage looks correct in backend.",
+    "Frontend uses TextInput/View/Text/Pressable correctly, KeyboardAvoidingView on manual screen, StyleSheet.create everywhere, all interactive elements have testID."
+  ],
+  "updated_files": ["/app/backend/tests/test_sottovoce.py"],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% (all tested flows working)"},
+  "seed_data_creation": "Test created and then cleaned up one 'Imagine' history entry as part of CRUD tests. Frontend tests left one 'Imagine' track in history (visible in screenshot).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend endpoints fully covered by /app/backend/tests/test_sottovoce.py (health, languages, lyrics, translate, manual track + full history CRUD, recognize empty-audio 400). Frontend flows verified via Playwright: onboarding language pick, home (mic/manual/history/settings/lang-pill), manual entry -> result (TrackCard + 30 karaoke lines + 3 tabs + car mode + play), history list+open, settings theme switching, language change from settings. Audio recording flow not e2e tested (needs real mic). Note: in Expo web preview every testID appears twice in DOM — when writing future Playwright tests use `.last` or `.first` rather than direct strict selectors.",
+  "rca_of_issue": "N/A — no bugs found."
+}
