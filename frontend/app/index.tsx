@@ -8,7 +8,7 @@ import { useApp } from "@/src/context/AppContext";
 import MicButton from "@/src/components/MicButton";
 
 export default function Home() {
-  const { colors, targetLang, hasOnboarded } = useApp();
+  const { colors, targetLang, hasOnboarded, carModeEnabled, setCarModeEnabled } = useApp();
   const router = useRouter();
 
   useEffect(() => {
