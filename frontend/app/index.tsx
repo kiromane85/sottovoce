@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@/src/components/Ionicons";
 
 import { useApp } from "@/src/context/AppContext";
 import MicButton from "@/src/components/MicButton";

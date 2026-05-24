@@ -8,7 +8,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@/src/components/Ionicons";
 
 import { useApp } from "@/src/context/AppContext";
 
